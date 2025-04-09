@@ -1,434 +1,290 @@
 #!/bin/bash
 
 # =================================================================
-# Ultimate ISH Shell Terminal Installation Script
-# Version: 2.0.0
-# Created by: officialrootman
-# Date: 2025-04-09 15:04:14 UTC
-# License: MIT
+# PENTESTER'S ULTIMATE ISH SHELL TERMINAL
+# Version: 3.0.0 (PenTest Edition)
+# Author: officialrootman
+# Created: 2025-04-09 15:14:21 UTC
+# License: MIT with Security Extensions
 # =================================================================
 
-# Renk Tanımlamaları
+# ANSI Renk Kodları ve Özel Efektler
 declare -A colors=(
     ["RED"]='\033[0;31m'
+    ["LIGHT_RED"]='\033[1;31m'
     ["GREEN"]='\033[0;32m'
+    ["LIGHT_GREEN"]='\033[1;32m'
     ["BLUE"]='\033[0;34m'
-    ["YELLOW"]='\033[1;33m'
-    ["PURPLE"]='\033[0;35m'
+    ["LIGHT_BLUE"]='\033[1;34m'
     ["CYAN"]='\033[0;36m'
+    ["LIGHT_CYAN"]='\033[1;36m'
+    ["PURPLE"]='\033[0;35m'
+    ["LIGHT_PURPLE"]='\033[1;35m'
+    ["YELLOW"]='\033[1;33m'
+    ["BLACK"]='\033[0;30m'
+    ["DARK_GRAY"]='\033[1;30m'
     ["WHITE"]='\033[1;37m'
+    ["BOLD"]='\033[1m'
+    ["BLINK"]='\033[5m'
     ["NC"]='\033[0m'
 )
 
-# Kurulum Bilgileri
-INSTALL_DATE="2025-04-09 15:04:14"
-INSTALL_USER="officialrootman"
-VERSION="2.0.0"
-BACKUP_DIR="$HOME/.config/ish-terminal/backups/$(date +%Y%m%d_%H%M%S)"
-CONFIG_DIR="$HOME/.config/ish-terminal"
-PLUGINS_DIR="$HOME/.local/share/ish-terminal/plugins"
-CACHE_DIR="$HOME/.cache/ish-terminal"
-LOG_FILE="$CONFIG_DIR/install.log"
+# Kurulum Değişkenleri
+readonly INSTALL_DATE="2025-04-09 15:14:21"
+readonly INSTALL_USER="officialrootman"
+readonly VERSION="3.0.0-pentest"
+readonly BACKUP_DIR="$HOME/.config/pentest-terminal/backups/$(date +%Y%m%d_%H%M%S)"
+readonly CONFIG_DIR="$HOME/.config/pentest-terminal"
+readonly TOOLS_DIR="$HOME/.local/share/pentest-tools"
+readonly SCRIPTS_DIR="$HOME/.scripts"
+readonly LOG_DIR="$HOME/.logs"
+readonly LOG_FILE="$LOG_DIR/install.log"
 
-# Banner gösterimi
+# Güvenlik Kontrolü
+check_security() {
+    if [ "$(id -u)" = "0" ]; then
+        echo -e "${colors[RED]}[!] Bu script root olarak çalıştırılmamalıdır!${colors[NC]}"
+        exit 1
+    fi
+}
+
+# Matrix-style Banner
 show_banner() {
-    echo -e "${colors[BLUE]}"
+    clear
+    echo -e "${colors[GREEN]}"
     cat << "EOF"
-╔════════════════════════════════════════════════════╗
-║             ULTIMATE ISH SHELL TERMINAL            ║
-║                Version 2.0.0 - 2025               ║
-║        Professional Development Environment        ║
-╚════════════════════════════════════════════════════╝
+▒█▀▀█ ▒█▀▀▀ ▒█▄░▒█ ▀▀█▀▀ ▒█▀▀▀ ▒█▀▀▀█ ▀▀█▀▀ ▒█▀▀▀ ▒█▀▀█ 
+▒█▄▄█ ▒█▀▀▀ ▒█▒█▒█ ░▒█░░ ▒█▀▀▀ ░▀▀▀▄▄ ░▒█░░ ▒█▀▀▀ ▒█▄▄▀ 
+▒█░░░ ▒█▄▄▄ ▒█░░▀█ ░▒█░░ ▒█▄▄▄ ▒█▄▄▄█ ░▒█░░ ▒█▄▄▄ ▒█░▒█
+
+╔═══════════════════════════════════════════════╗
+║        PENTESTER'S ULTIMATE ISH SHELL         ║
+║        Security Through Knowledge             ║
+╚═══════════════════════════════════════════════╝
 EOF
     echo -e "${colors[NC]}"
 }
 
-# Logging fonksiyonu
-log() {
-    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
-}
-
-# Hata yakalama
-set -e
-trap 'echo -e "${colors[RED]}Error occurred on line $LINENO${colors[NC]}" | tee -a "$LOG_FILE"' ERR
-
-# Gerekli dizinleri oluştur
-create_directories() {
-    local dirs=(
-        "$BACKUP_DIR"
-        "$CONFIG_DIR"
-        "$PLUGINS_DIR"
-        "$CACHE_DIR"
-        "$HOME/.local/bin"
-        "$HOME/.notes"
-        "$HOME/.scripts"
-    )
-
-    for dir in "${dirs[@]}"; do
-        mkdir -p "$dir"
-        log "Created directory: $dir"
-    done
-}
-
-# Ana yapılandırma dosyasını oluştur
+# Ana Yapılandırma Dosyası
 create_main_config() {
     cat > ~/.bashrc << 'EOF'
 #!/bin/bash
 
 # =================================================================
-# Ultimate ISH Shell Terminal Configuration
-# Version: 2.0.0
-# Last Updated: 2025-04-09 15:04:14
+# PENTESTER'S ULTIMATE ISH SHELL CONFIGURATION
 # =================================================================
 
-# ===== Temel Ayarlar =====
-export TERM=xterm-256color
-export EDITOR=nano
-export VISUAL=$EDITOR
-export LANG=en_US.UTF-8
-export LC_ALL=en_US.UTF-8
-export TMPDIR="/tmp/$USER"
-mkdir -p $TMPDIR
+# Temel Güvenlik Ayarları
+umask 077
+set -o noclobber
+TMOUT=3600
 
-# ===== Gelişmiş Prompt =====
-source ~/.config/ish-terminal/prompt.sh
+# Gelişmiş Geçmiş Ayarları
+HISTCONTROL=ignoreboth:erasedups
+HISTTIMEFORMAT="%F %T "
+HISTFILE="$HOME/.logs/bash_history"
+HISTSIZE=50000
+HISTFILESIZE=100000
 
-# ===== Performans Optimizasyonları =====
-# Önbellek boyutunu artır
-ulimit -n 10000
-export HISTSIZE=50000
-export HISTFILESIZE=100000
-export HISTCONTROL=ignoreboth:erasedups
-export HISTIGNORE="ls:ll:cd:pwd:clear:history:exit"
-export HISTTIMEFORMAT="%F %T "
-
-# Geçmişi her komuttan sonra kaydet ve senkronize et
-PROMPT_COMMAND="history -a; history -n; $PROMPT_COMMAND"
-
-# ===== Gelişmiş Shell Seçenekleri =====
-shopt -s autocd
-shopt -s cdspell
-shopt -s dirspell
-shopt -s globstar
-shopt -s histappend
-shopt -s checkwinsize
-shopt -s cmdhist
-shopt -s lithist
-shopt -s direxpand
-shopt -s dotglob
-shopt -s gnu_errfmt
-shopt -s extglob
-
-# ===== Profesyonel Alias Tanımlamaları =====
-# Sistem Yönetimi
-alias reload='source ~/.bashrc && echo "Configuration reloaded!"'
-alias update='sudo apt update && sudo apt upgrade -y'
-alias cls='clear && printf "\e[3J"'
-alias ports='netstat -tulanp'
-alias processes='ps aux | grep'
-alias disk='ncdu'
-alias services='systemctl list-units --type=service'
-
-# Gelişmiş Dosya İşlemleri
-alias ls='ls --color=auto --group-directories-first'
-alias ll='ls -la --group-directories-first'
-alias l='ls -l --group-directories-first'
-alias tree='tree -C'
-alias grep='grep --color=auto'
-alias fgrep='fgrep --color=auto'
-alias egrep='egrep --color=auto'
-alias diff='diff --color=auto'
-alias cp='cp -iv'
-alias mv='mv -iv'
-alias rm='rm -iv'
-alias ln='ln -iv'
-alias mkdir='mkdir -pv'
-alias chmod='chmod -v'
-alias chown='chown -v'
-
-# Geliştirici Araçları
-alias g='git'
-alias gst='git status'
-alias gl='git log --oneline --graph --decorate'
-alias gp='git push'
-alias gpl='git pull'
-alias gc='git commit'
-alias gco='git checkout'
-alias gb='git branch'
-alias ga='git add'
-alias gd='git diff'
-alias docker-clean='docker system prune -af'
-alias dc='docker-compose'
-
-# Ağ Araçları
-alias myip='curl -s ifconfig.me'
-alias localip='hostname -I | awk "{print \$1}"'
-alias ports='netstat -tulanp'
-alias ping='ping -c 5'
-alias websitetest='curl -s -w "\nLookup time:\t%{time_namelookup}\nConnect time:\t%{time_connect}\nPreXfer time:\t%{time_pretransfer}\nStartXfer time:\t%{time_starttransfer}\n\nTotal time:\t%{time_total}\n" -o /dev/null'
-
-# ===== Gelişmiş Fonksiyonlar =====
-
-# Proje Yönetimi
-project() {
-    case "$1" in
-        "create")
-            mkdir -p "$2"/{src,docs,tests,resources}
-            touch "$2"/{README.md,.gitignore}
-            cd "$2" || return
-            git init
-            echo "Project $2 created successfully!"
-            ;;
-        "list")
-            find ~/Projects -maxdepth 1 -type d -print0 | xargs -0 -n1 basename
-            ;;
-        *)
-            echo "Usage: project [create|list] [project_name]"
-            ;;
-    esac
-}
-
-# Gelişmiş Dosya Arama
-search() {
-    case "$1" in
-        "file")
-            find . -type f -iname "*$2*"
-            ;;
-        "content")
-            grep -r "$2" .
-            ;;
-        "size")
-            find . -type f -size "$2"
-            ;;
-        *)
-            echo "Usage: search [file|content|size] [pattern]"
-            ;;
-    esac
-}
-
-# Sistem Monitörü
-monitor() {
-    case "$1" in
-        "cpu")
-            top -b -n 1 | head -n 20
-            ;;
-        "mem")
-            free -h
-            ;;
-        "disk")
-            df -h
-            ;;
-        "all")
-            echo "=== CPU ===="
-            top -b -n 1 | head -n 20
-            echo "=== Memory ==="
-            free -h
-            echo "=== Disk ==="
-            df -h
-            ;;
-        *)
-            echo "Usage: monitor [cpu|mem|disk|all]"
-            ;;
-    esac
-}
-
-# Hızlı Not Sistemi
-note() {
-    local notes_dir="$HOME/.notes"
-    case "$1" in
-        "new")
-            $EDITOR "$notes_dir/$(date +%Y%m%d_%H%M%S).md"
-            ;;
-        "list")
-            ls -l "$notes_dir"
-            ;;
-        "search")
-            grep -r "$2" "$notes_dir"
-            ;;
-        *)
-            echo "Usage: note [new|list|search] [pattern]"
-            ;;
-    esac
-}
-
-# Geliştirici Araçları
-dev() {
-    case "$1" in
-        "server")
-            python3 -m http.server "${2:-8000}"
-            ;;
-        "json")
-            python3 -m json.tool
-            ;;
-        "encode")
-            echo "$2" | base64
-            ;;
-        "decode")
-            echo "$2" | base64 -d
-            ;;
-        *)
-            echo "Usage: dev [server|json|encode|decode] [args]"
-            ;;
-    esac
-}
-
-# Sistem Bakımı
-maintain() {
-    case "$1" in
-        "clean")
-            sudo apt autoremove -y
-            sudo apt clean
-            sudo journalctl --vacuum-time=7d
-            ;;
-        "update")
-            sudo apt update
-            sudo apt upgrade -y
-            sudo apt autoremove -y
-            ;;
-        *)
-            echo "Usage: maintain [clean|update]"
-            ;;
-    esac
-}
-
-# ===== Ortam Değişkenleri =====
-export PATH="$HOME/.local/bin:$HOME/.scripts:$PATH"
-export CDPATH=".:$HOME:$HOME/Projects"
-
-# ===== Tamamlama Ayarları =====
-if [ -f /etc/bash_completion ]; then
-    . /etc/bash_completion
-fi
-
-# ===== Güvenlik Kontrolleri =====
-# SSH Agent Kontrolü
-if ! pgrep -u "$USER" ssh-agent > /dev/null; then
-    ssh-agent > "$CONFIG_DIR/ssh-agent"
-fi
-if [[ "$SSH_AGENT_PID" == "" ]]; then
-    eval "$(<"$CONFIG_DIR/ssh-agent")"
-fi
-
-# Sistem Durumu Kontrolü
-check_system_status() {
+# Güvenlik Fonksiyonları
+security_check() {
     local warnings=()
     
-    # Disk kullanımı kontrolü
-    local disk_usage
-    disk_usage=$(df -h / | awk 'NR==2 {print $5}' | cut -d'%' -f1)
-    if [ "$disk_usage" -gt 90 ]; then
-        warnings+=("Disk usage is at ${disk_usage}%")
+    # Rootkit kontrolü
+    if command -v rkhunter >/dev/null 2>&1; then
+        sudo rkhunter --check --skip-keypress > "$HOME/.logs/rkhunter.log"
     fi
-
-    # RAM kullanımı kontrolü
-    local memory_usage
-    memory_usage=$(free | awk '/Mem:/ {print int($3/$2 * 100)}')
-    if [ "$memory_usage" -gt 90 ]; then
-        warnings+=("Memory usage is at ${memory_usage}%")
+    
+    # Açık portları kontrol et
+    netstat -tuln | grep LISTEN > "$HOME/.logs/open_ports.log"
+    
+    # SSH yapılandırmasını kontrol et
+    if [ -f /etc/ssh/sshd_config ]; then
+        grep -E "PermitRootLogin|PasswordAuthentication" /etc/ssh/sshd_config > "$HOME/.logs/ssh_config.log"
     fi
-
-    # CPU yükü kontrolü
-    local cpu_load
-    cpu_load=$(uptime | awk -F'load average:' '{ print $2 }' | cut -d, -f1 | xargs)
-    if (( $(echo "$cpu_load > 4" | bc -l) )); then
-        warnings+=("High CPU load: ${cpu_load}")
-    fi
-
-    # Uyarıları göster
-    if [ ${#warnings[@]} -gt 0 ]; then
-        echo -e "\n${colors[YELLOW]}System Warnings:${colors[NC]}"
-        printf '%s\n' "${warnings[@]}"
+    
+    # Sistem güncellemelerini kontrol et
+    if command -v apt >/dev/null 2>&1; then
+        apt list --upgradable 2>/dev/null > "$HOME/.logs/updates.log"
     fi
 }
 
-# ===== Başlangıç Mesajı =====
-clear
-echo -e "${colors[BLUE]}Welcome to Ultimate ISH Shell Terminal${colors[NC]}"
-echo -e "${colors[YELLOW]}User: ${colors[NC]}$USER"
-echo -e "${colors[YELLOW]}Date: ${colors[NC]}$(date)"
-echo -e "${colors[YELLOW]}Uptime: ${colors[NC]}$(uptime -p)"
-check_system_status
+# Penetrasyon Testi Fonksiyonları
+pentest() {
+    case "$1" in
+        "recon")
+            echo "Starting reconnaissance..."
+            nmap -sC -sV -oA scan_results "$2"
+            ;;
+        "scan")
+            echo "Starting vulnerability scan..."
+            nikto -h "$2" -o scan_"$2".txt
+            ;;
+        "monitor")
+            echo "Starting network monitoring..."
+            tcpdump -i any -w capture.pcap
+            ;;
+        *)
+            echo "Usage: pentest [recon|scan|monitor] [target]"
+            ;;
+    esac
+}
 
-# ===== Eklenti Yükleyici =====
-if [ -d "$PLUGINS_DIR" ]; then
-    for plugin in "$PLUGINS_DIR"/*.sh; do
-        if [ -f "$plugin" ]; then
-            source "$plugin"
-        fi
-    done
-fi
+# Güvenlik Alias'ları
+alias checksec='checksec --file'
+alias scan='nmap -sC -sV'
+alias sniff='sudo tcpdump -i any'
+alias firewall='sudo iptables -L'
+alias portscan='netstat -tulanp'
+alias processes='ps aux --sort=-%cpu'
+alias monitor='htop'
+alias encrypt='gpg -c'
+alias decrypt='gpg'
+alias shred='shred -u -z'
+alias secure_delete='srm -vz'
+alias hide='steghide'
+
+# Ağ Güvenliği Alias'ları
+alias myip='curl -s https://api.ipify.org'
+alias localnet='netdiscover -r "$(ip -o -f inet addr show | awk "/scope global/ {print \$4}")"'
+alias listening='netstat -antp | grep LISTEN'
+alias connections='netstat -antp | grep ESTABLISHED'
+alias iptraf='sudo iptraf-ng'
+
+# Sistem Güvenliği Alias'ları
+alias chkrootkit='sudo chkrootkit'
+alias rkhunter='sudo rkhunter --check'
+alias lynis='sudo lynis audit system'
+alias auditd='sudo auditctl -l'
+alias logwatch='sudo logwatch --detail high'
+
+# Gelişmiş Güvenlik Fonksiyonları
+secure_system() {
+    echo "Performing system security audit..."
+    
+    # Sistem günlüklerini kontrol et
+    echo "Checking system logs..."
+    sudo tail -n 1000 /var/log/auth.log > "$HOME/.logs/auth_check.log"
+    sudo tail -n 1000 /var/log/syslog > "$HOME/.logs/system_check.log"
+    
+    # Açık portları tara
+    echo "Scanning open ports..."
+    netstat -tulanp > "$HOME/.logs/ports_check.log"
+    
+    # Dosya sistemi kontrolü
+    echo "Checking file permissions..."
+    find / -type f -perm -04000 -ls 2>/dev/null > "$HOME/.logs/suid_check.log"
+    
+    echo "Security audit complete. Check logs in ~/.logs/"
+}
+
+# Ağ Analiz Fonksiyonları
+analyze_network() {
+    echo "Starting network analysis..."
+    
+    # ARP tablosunu kontrol et
+    arp -a > "$HOME/.logs/arp_check.log"
+    
+    # DNS çözümlemesini kontrol et
+    dig +short google.com > "$HOME/.logs/dns_check.log"
+    
+    # Traceroute analizi
+    traceroute google.com > "$HOME/.logs/route_check.log"
+    
+    echo "Network analysis complete. Check logs in ~/.logs/"
+}
+
+# Güvenlik Prompt'u
+PS1='\[\e[0;31m\][\[\e[0m\]\[\e[0;37m\]\u\[\e[0m\]\[\e[0;31m\]@\[\e[0m\]\[\e[0;37m\]\h\[\e[0m\]\[\e[0;31m\]]\[\e[0m\]\[\e[0;37m\] \[\e[0m\]\[\e[0;31m\][\[\e[0m\]\[\e[0;37m\]\w\[\e[0m\]\[\e[0;31m\]]\[\e[0m\]\[\e[0;37m\]\n\[\e[0m\]\[\e[0;31m\]└─\[\e[0m\]\[\e[0;37m\]▶\[\e[0m\] '
+
+# Başlangıç Güvenlik Kontrolü
+echo -e "${colors[RED]}[*] Performing initial security check...${colors[NC]}"
+security_check
+
+# Güvenlik İpuçları
+echo -e "${colors[YELLOW]}[!] Security Tips:${colors[NC]}"
+echo "1. Always use encrypted connections"
+echo "2. Monitor system logs regularly"
+echo "3. Keep your system updated"
+echo "4. Use strong passwords"
+echo "5. Check for rootkits periodically"
+
+# Sistem Bilgisi
+echo -e "${colors[CYAN]}[*] System Information:${colors[NC]}"
+echo "User: $USER"
+echo "Hostname: $(hostname)"
+echo "Kernel: $(uname -r)"
+echo "Uptime: $(uptime -p)"
+
+# Güvenlik Durumu
+echo -e "${colors[GREEN]}[*] Security Status:${colors[NC]}"
+echo "Last Login: $(last -1 | head -1)"
+echo "Failed Login Attempts: $(grep "Failed password" /var/log/auth.log | wc -l)"
+echo "Open Ports: $(netstat -tuln | grep LISTEN | wc -l)"
+
 EOF
 }
 
-# Prompt yapılandırması
-create_prompt_config() {
-    cat > "$CONFIG_DIR/prompt.sh" << 'EOF'
-#!/bin/bash
-
-# Git durumunu al
-parse_git_branch() {
-    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
+# Güvenlik Araçları Kurulumu
+install_security_tools() {
+    echo -e "${colors[YELLOW]}Installing security tools...${colors[NC]}"
+    
+    # Temel güvenlik araçları
+    sudo apt-get update
+    sudo apt-get install -y \
+        nmap \
+        tcpdump \
+        wireshark \
+        nikto \
+        netcat \
+        hydra \
+        john \
+        aircrack-ng \
+        metasploit-framework \
+        burpsuite \
+        sqlmap \
+        dirb \
+        wpscan \
+        proxychains \
+        tor \
+        rkhunter \
+        chkrootkit \
+        lynis \
+        fail2ban \
+        net-tools \
+        htop \
+        iptraf-ng \
+        nethogs \
+        iftop \
+        ntopng
 }
 
-# Git değişikliklerini kontrol et
-parse_git_dirty() {
-    [[ $(git status 2> /dev/null | tail -n1) != "nothing to commit, working tree clean" ]] && echo "*"
-}
-
-# Sunucu yükünü kontrol et
-get_load() {
-    uptime | awk -F'load average:' '{ print $2 }' | cut -d, -f1 | xargs
-}
-
-# Özelleştirilmiş prompt
-PS1='\[\e[38;5;39m\]┌─[\[\e[38;5;82m\]\u\[\e[38;5;39m\]@\[\e[38;5;82m\]\h\[\e[38;5;39m\]]-[\[\e[38;5;82m\]\w\[\e[38;5;39m\]]\[\e[38;5;196m\]$(parse_git_branch)$(parse_git_dirty)\n\[\e[38;5;39m\]└─\[\e[38;5;82m\]λ\[\e[0m\] '
-EOF
-}
-
-# Ana kurulum fonksiyonu
+# Ana Kurulum Fonksiyonu
 main() {
+    check_security
     show_banner
     
-    echo -e "${colors[YELLOW]}Starting installation...${colors[NC]}"
-    log "Starting installation for user: $INSTALL_USER"
-
+    echo -e "${colors[YELLOW]}Starting PenTester's Ultimate ISH Shell installation...${colors[NC]}"
+    
     # Dizinleri oluştur
-    echo -e "${colors[GREEN]}Creating directories...${colors[NC]}"
-    create_directories
-
+    mkdir -p "$BACKUP_DIR" "$CONFIG_DIR" "$TOOLS_DIR" "$SCRIPTS_DIR" "$LOG_DIR"
+    
     # Mevcut yapılandırmayı yedekle
-    echo -e "${colors[GREEN]}Backing up existing configuration...${colors[NC]}"
     if [ -f ~/.bashrc ]; then
         cp ~/.bashrc "$BACKUP_DIR/bashrc.backup"
-        log "Backed up existing .bashrc"
     fi
-
+    
     # Ana yapılandırmayı oluştur
-    echo -e "${colors[GREEN]}Creating main configuration...${colors[NC]}"
     create_main_config
-    log "Created main configuration"
-
-    # Prompt yapılandırmasını oluştur
-    echo -e "${colors[GREEN]}Creating prompt configuration...${colors[NC]}"
-    create_prompt_config
-    log "Created prompt configuration"
-
-    # Gerekli paketleri kur
-    echo -e "${colors[GREEN]}Installing required packages...${colors[NC]}"
-    if command -v apt-get &> /dev/null; then
-        sudo apt-get update
-        sudo apt-get install -y git curl wget tree ncdu htop net-tools
-        log "Installed required packages"
-    fi
-
+    
+    # Güvenlik araçlarını kur
+    install_security_tools
+    
     # Yapılandırmayı yükle
-    echo -e "${colors[GREEN]}Loading new configuration...${colors[NC]}"
     source ~/.bashrc
-    log "Loaded new configuration"
-
-    echo -e "\n${colors[BLUE]}Installation Complete!${colors[NC]}"
-    echo -e "${colors[YELLOW]}Please restart your terminal or run 'source ~/.bashrc' to apply all changes.${colors[NC]}"
-    echo -e "${colors[GREEN]}Installation log available at: $LOG_FILE${colors[NC]}"
+    
+    echo -e "${colors[GREEN]}Installation complete!${colors[NC]}"
+    echo -e "${colors[YELLOW]}Please restart your terminal or run 'source ~/.bashrc'${colors[NC]}"
 }
 
 # Kurulumu başlat
