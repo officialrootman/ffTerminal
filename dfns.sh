@@ -4,7 +4,7 @@
 echo "Honeypot sahte sunucusu başlatılıyor..."
 
 # Sahte sunucu için log dosyası
-LOG_FILE="honeypot_logs.txt"
+LOG_FILE="logs.txt"
 
 # Netcat ile sahte bir HTTP sunucusu oluştur
 while true; do
