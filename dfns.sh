@@ -1,16 +1,14 @@
 #!/bin/bash
 
 # ============================================
-# Ultimate Honeypot Tool v4
+# Ultimate Honeypot Script
 # ============================================
 # Özellikler:
-# - Makine öğrenimi tabanlı saldırı analizi
-# - Gerçekçi sahte dosya sistemi
-# - Grafiksel raporlama ve görselleştirme
-# - Akıllı davranış simülasyonu
-# - SIEM entegrasyonu ve dışa aktarma
-# - Canlı trafik izleme (web arayüzü)
-# - RESTful API desteği
+# - Dinamik sahte veri üretimi
+# - Çoklu servis taklidi (SSH, HTTP, FTP)
+# - Gelen komutları loglama ve analiz
+# - E-posta bildirimleri
+# - Docker ile izolasyon desteği
 
 # --------------------------------------------
 # Ayarlar
@@ -18,96 +16,43 @@
 PORT_SSH=2222
 PORT_HTTP=8080
 PORT_FTP=2121
-LOGFILE="honeypot.json"
-REPORT_DIR="reports"
-EMAIL_ALERT="admin@example.com"
-SLACK_WEBHOOK_URL="https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
-TELEGRAM_BOT_TOKEN="123456789:ABCDEF1234567890abcdef1234567890"
-TELEGRAM_CHAT_ID="123456789"
-BLACKLIST_FILE="blacklist.txt"
-GEOIP_API="https://ipinfo.io"
-SIEM_ENDPOINT="https://siem.example.com/api/v1/logs"
-
-# Sahte dosya sistemi
-FAKE_FS=(
-    "file1.txt"
-    "file2.txt"
-    "passwords.db"
-    "config.yaml"
-    "secret.key"
-)
-
-# Sahte komut çıktıları
-declare -A FAKE_COMMANDS
-FAKE_COMMANDS=(
-    ["ls"]="file1.txt file2.txt passwords.db config.yaml secret.key"
-    ["cat file1.txt"]="Bu dosya çok gizli bilgiler içeriyor!"
-    ["whoami"]="root"
-    ["uname -a"]="Linux honeypot 5.15.0-1018-aws #20-Ubuntu SMP Fri Oct 14 12:00:00 UTC 2022 x86_64 GNU/Linux"
-)
+LOGFILE="honeypot.log"
+ALERT_EMAIL="admin@example.com"
+MAX_CONNECTIONS=100
+DOCKER_IMAGE="honeypot_container:latest"
 
 # --------------------------------------------
-# Loglama ve Analiz
+# Sahte Veri Üretim Fonksiyonları
 # --------------------------------------------
-log_event() {
-    local type="$1"
-    local message="$2"
-    local ip="$3"
-    local geolocation
-    geolocation=$(curl -s "$GEOIP_API/$ip" | jq -r '.city, .region, .country')
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-
-    echo "{\"timestamp\": \"$timestamp\", \"type\": \"$type\", \"message\": \"$message\", \"ip\": \"$ip\", \"location\": \"$geolocation\"}" >> $LOGFILE
-
-    # SIEM entegrasyonu için log gönder
-    curl -X POST -H "Content-Type: application/json" -d "{\"timestamp\": \"$timestamp\", \"type\": \"$type\", \"message\": \"$message\", \"ip\": \"$ip\", \"location\": \"$geolocation\"}" $SIEM_ENDPOINT
+generate_fake_password() {
+    echo "$(openssl rand -base64 12)"
 }
 
-send_alert() {
-    local message="$1"
-    local ip="$2"
-
-    # E-posta bildirimi
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $message | IP: $ip" | mail -s "Honeypot Alert" $EMAIL_ALERT
-
-    # Slack bildirimi
-    curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"$message | IP: $ip\"}" $SLACK_WEBHOOK_URL
-
-    # Telegram bildirimi
-    curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-         -d chat_id="$TELEGRAM_CHAT_ID" \
-         -d text="$message | IP: $ip"
+generate_fake_ip() {
+    echo "$(shuf -i 1-255 -n 4 | paste -sd. -)"
 }
 
-add_to_blacklist() {
-    local ip="$1"
-    echo "$ip" >> $BLACKLIST_FILE
-    iptables -A INPUT -s "$ip" -j DROP
+generate_fake_fs() {
+    echo -e "file1.txt\nfile2.txt\ndata.log\nconfig.yaml\nsecret.key"
+}
+
+generate_fake_users() {
+    echo -e "admin\nroot\nguest\ndeveloper"
 }
 
 # --------------------------------------------
-# Sahte SSH Servisi
+# Servis Fonksiyonları
 # --------------------------------------------
 fake_ssh_service() {
     echo "SSH-2.0-OpenSSH_8.4p1"
-    while true; do
-        read -p "Komut: " cmd
-        if [[ ${FAKE_COMMANDS[$cmd]+_} ]]; then
-            echo "${FAKE_COMMANDS[$cmd]}"
-        else
-            echo "Bilinmeyen komut: $cmd"
-        fi
-        log_event "command" "$cmd" "$REMOTE_IP"
-        if [[ "$cmd" == "brute_force" ]]; then
-            send_alert "Brute force saldırısı algılandı!" "$REMOTE_IP"
-            add_to_blacklist "$REMOTE_IP"
-        fi
-    done
+    echo "Giriş başarısız: Geçersiz şifre"
+    echo "Son giriş IP: $(generate_fake_ip)"
+    echo "Kullanıcı adı: admin"
+    echo "Şifre: $(generate_fake_password)"
+    echo "Dosyalar:"
+    echo "$(generate_fake_fs)"
 }
 
-# --------------------------------------------
-# Sahte HTTP Servisi
-# --------------------------------------------
 fake_http_service() {
     echo "HTTP/1.1 200 OK"
     echo "Content-Type: text/html"
@@ -115,9 +60,6 @@ fake_http_service() {
     echo "<html><body><h1>Gizli Sisteme Hoş Geldiniz</h1><p>Bu sistem çok gizli veriler içeriyor.</p></body></html>"
 }
 
-# --------------------------------------------
-# Sahte FTP Servisi
-# --------------------------------------------
 fake_ftp_service() {
     echo "220 Welcome to the Fake FTP Server"
     echo "331 Please specify the password."
@@ -125,11 +67,27 @@ fake_ftp_service() {
 }
 
 # --------------------------------------------
-# Web Arayüzü ve API
+# Loglama ve Analiz
 # --------------------------------------------
-start_web_interface() {
-    echo "Web arayüzü başlatılıyor..."
-    python3 -m http.server 9090 --directory $REPORT_DIR &
+log_connection() {
+    local ip="$1"
+    local port="$2"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Bağlantı algılandı: IP -> $ip, Port -> $port" >> $LOGFILE
+    send_alert "$ip" "$port"
+}
+
+send_alert() {
+    local ip="$1"
+    local port="$2"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Saldırı algılandı! IP: $ip, Port: $port" | mail -s "Honeypot Alert" $ALERT_EMAIL
+}
+
+# --------------------------------------------
+# Docker ile İzolasyon
+# --------------------------------------------
+start_docker_honeypot() {
+    echo "Docker container başlatılıyor: $DOCKER_IMAGE"
+    docker run -d -p $PORT_SSH:$PORT_SSH -p $PORT_HTTP:$PORT_HTTP -p $PORT_FTP:$PORT_FTP $DOCKER_IMAGE
 }
 
 # --------------------------------------------
@@ -139,7 +97,7 @@ start_honeypot() {
     echo "Honeypot başlatılıyor..."
     echo "SSH Portu: $PORT_SSH | HTTP Portu: $PORT_HTTP | FTP Portu: $PORT_FTP"
     echo "Log dosyası: $LOGFILE"
-    echo "Kara liste: $BLACKLIST_FILE"
+    echo "Maksimum bağlantı: $MAX_CONNECTIONS"
     echo "-----------------------------------"
 
     # SSH Servisi
@@ -156,12 +114,13 @@ start_honeypot() {
     while true; do
         nc -l -p $PORT_FTP -c fake_ftp_service &
     done &
-
-    # Web Arayüzü
-    start_web_interface
 }
 
 # --------------------------------------------
 # Ana Program
 # --------------------------------------------
-start_honeypot
+if [[ "$1" == "docker" ]]; then
+    start_docker_honeypot
+else
+    start_honeypot
+fi
