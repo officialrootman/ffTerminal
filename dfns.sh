@@ -1,88 +1,90 @@
-#!/bin/bash
+#!/bin/sh
 
-# Gelişmiş Honeypot Sistemi
-# Amaç: Saldırgan aktivitelerini izlemek, analiz etmek ve sınıflandırmak.
-# Yasal uyarı: Bu script yalnızca eğitim ve etik hacking amaçlıdır. İzinsiz kullanım yasa dışıdır.
+# İSH Honeypot Sistemi
+# Amacı: Saldırgan aktivitelerini izlemek, loglamak ve minimal bağımlılıkla çalışmak
+# Yasal Uyarı: Bu script yalnızca etik kullanım ve eğitim amaçlıdır.
 
-# Log dosyası
-LOG_FILE="elite_honeypot_logs.txt"
-TMP_REQUEST="/tmp/honeypot_request.txt"
-echo "Honeypot başlatıldı. Log dosyası: $LOG_FILE"
+# === Ayarlar ===
+LOG_FILE="honeypot_ish_logs.txt"
+HTTP_PORT=8080
+SSH_PORT=2222
+TMP_HTTP_REQUEST="/tmp/http_request.txt"
+TMP_SSH_REQUEST="/tmp/ssh_request.txt"
 
-# Sahte servisleri başlat
-start_honeypot() {
-  echo "$(date) - Honeypot sistemi başlatılıyor..." >> $LOG_FILE
+# Zaman Damgası
+timestamp() {
+  date +"%Y-%m-%d %H:%M:%S"
+}
+
+# Güvenli Loglama
+log_event() {
+  local MESSAGE=$1
+  echo "$(timestamp) - $MESSAGE" >> "$LOG_FILE"
+}
+
+# HTTP Honeypot
+start_http_honeypot() {
+  log_event "HTTP honeypot başlatılıyor (Port: $HTTP_PORT)..."
+
   while true; do
-    # Gelen bağlantıları dinle ve logla
+    # Gelen HTTP bağlantılarını dinle
     { 
       echo -e "HTTP/1.1 200 OK\n\nSahte Veri: Honeypot çalışıyor"
-      echo "$(date) - Sahte HTTP isteği yanıtlandı!" >> $LOG_FILE
-    } | nc -l -k -p 8080 > $TMP_REQUEST &
-
-    # Saldırganın IP adresini tespit et ve logla
-    SENDER_IP=$(netstat -an | grep ":8080" | grep ESTABLISHED | awk '{print $5}' | cut -d: -f1)
-    if [ ! -z "$SENDER_IP" ]; then
-      echo "$(date) - Bağlantı kuruldu! IP: $SENDER_IP" >> $LOG_FILE
-    fi
+    } | nc -l -p $HTTP_PORT > $TMP_HTTP_REQUEST
 
     # Gelen isteği analiz et
-    analyze_request
-    sleep 1
+    SENDER_IP=$(netstat -an | grep ":$HTTP_PORT" | grep ESTABLISHED | awk '{print $5}' | cut -d: -f1)
+    if [ ! -z "$SENDER_IP" ]; then
+      log_event "HTTP bağlantısı tespit edildi. IP: $SENDER_IP"
+      log_event "Gelen HTTP isteği: $(cat $TMP_HTTP_REQUEST)"
+    fi
+
+    # Geçici dosyayı temizle
+    rm -f "$TMP_HTTP_REQUEST"
   done
 }
 
-# İstek analiz fonksiyonu
-analyze_request() {
-  if [ -f "$TMP_REQUEST" ]; then
-    REQUEST_CONTENT=$(cat $TMP_REQUEST)
+# SSH Honeypot
+start_ssh_honeypot() {
+  log_event "SSH honeypot başlatılıyor (Port: $SSH_PORT)..."
 
-    # SQL Injection tespiti
-    if echo "$REQUEST_CONTENT" | grep -iq "select\|union\|drop\|insert\|update"; then
-      echo "$(date) - SQL Injection saldırısı tespit edildi! IP: $SENDER_IP" >> $LOG_FILE
-    fi
-
-    # XSS (Cross-Site Scripting) saldırısı tespiti
-    if echo "$REQUEST_CONTENT" | grep -iq "<script>"; then
-      echo "$(date) - XSS saldırısı tespit edildi! IP: $SENDER_IP" >> $LOG_FILE
-    fi
-
-    # Brute Force tespiti
-    if echo "$REQUEST_CONTENT" | grep -iq "login\|password"; then
-      echo "$(date) - Brute Force denemesi tespit edildi! IP: $SENDER_IP" >> $LOG_FILE
-    fi
-
-    # Admin Panel Arama
-    if echo "$REQUEST_CONTENT" | grep -iq "admin"; then
-      echo "$(date) - Admin paneli araması tespit edildi! IP: $SENDER_IP" >> $LOG_FILE
-    fi
-
-    # Diğer aktiviteler
-    echo "$(date) - Gelen istek: $REQUEST_CONTENT" >> $LOG_FILE
-    rm -f $TMP_REQUEST
-  fi
-}
-
-# Ekstra servisler ekle (örnek: sahte SSH sunucusu)
-start_fake_ssh() {
-  echo "$(date) - Sahte SSH servisi başlatılıyor..." >> $LOG_FILE
   while true; do
+    # Sahte SSH bağlantılarını dinle
     { 
-      echo "SSH-2.0-OpenSSH_7.4"
-      echo "$(date) - Sahte SSH bağlantısı yanıtlandı!" >> $LOG_FILE
-    } | nc -l -k -p 2222
+      echo "SSH-2.0-OpenSSH_8.0"
+    } | nc -l -p $SSH_PORT > $TMP_SSH_REQUEST
+
+    # Gelen isteği analiz et
+    SENDER_IP=$(netstat -an | grep ":$SSH_PORT" | grep ESTABLISHED | awk '{print $5}' | cut -d: -f1)
+    if [ ! -z "$SENDER_IP" ]; then
+      log_event "SSH bağlantısı tespit edildi. IP: $SENDER_IP"
+    fi
+
+    # Geçici dosyayı temizle
+    rm -f "$TMP_SSH_REQUEST"
   done
 }
 
-# Ana işlev
+# Ana İşlev
 main() {
-  # Sahte servisleri paralel olarak başlat
-  start_honeypot &
-  start_fake_ssh &
+  # Log dosyası başlat
+  log_event "Honeypot sistemi başlatılıyor..."
+
+  # Paralel Servis Başlatma
+  start_http_honeypot &
+  start_ssh_honeypot &
   wait
 }
 
-# Çıkış sinyali yakala ve temizle
-trap "echo 'Honeypot durduruluyor...'; exit" SIGINT SIGTERM
+# Çıkış ve Temizlik
+cleanup() {
+  log_event "Honeypot sistemi durduruluyor..."
+  rm -f "$TMP_HTTP_REQUEST" "$TMP_SSH_REQUEST"
+  exit 0
+}
 
-# Honeypot'u başlat
+# Çıkış Sinyallerini Yakala
+trap cleanup INT TERM
+
+# Honeypot'u Başlat
 main
