@@ -2,11 +2,18 @@ import socket
 import threading
 import time
 from datetime import datetime
+import random
 
 # === Ayarlar ===
-HTTP_PORT = 8080
 SSH_PORT = 2222
-FTP_PORT = 2121
+MAX_ATTEMPTS = 5  # Brute Force saldırılarındaki maksimum giriş deneme sayısı
+FAKE_CREDENTIALS = [
+    {"username": "admin", "password": "123456"},
+    {"username": "root", "password": "password"},
+    {"username": "guest", "password": "guest123"},
+    {"username": "test", "password": "test123"},
+    {"username": "user", "password": "user123"}
+]
 
 def timestamp():
     """Zaman damgası oluşturur."""
@@ -17,32 +24,31 @@ def delay_response(seconds):
     print(f"{timestamp()} - Saldırganı oyalamak için {seconds} saniye bekleniyor...")
     time.sleep(seconds)
 
-def handle_http_connection(client_socket, client_address):
-    """HTTP honeypot bağlantılarını işler."""
-    print(f"{timestamp()} - HTTP bağlantısı tespit edildi. IP: {client_address[0]}")
-    delay_response(5)
-    response = "HTTP/1.1 200 OK\n\nSahte Veri: Honeypot çalışıyor. İncelemeye devam edin..."
-    client_socket.sendall(response.encode())
-    client_socket.close()
-
-def start_http_honeypot():
-    """HTTP honeypot başlatır."""
-    print(f"{timestamp()} - HTTP honeypot başlatılıyor (Port: {HTTP_PORT})...")
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(("0.0.0.0", HTTP_PORT))
-    server.listen(5)
-
-    while True:
-        client_socket, client_address = server.accept()
-        thread = threading.Thread(target=handle_http_connection, args=(client_socket, client_address))
-        thread.start()
+def generate_fake_credentials():
+    """Rastgele sahte kullanıcı adı ve şifre oluşturur."""
+    return random.choice(FAKE_CREDENTIALS)
 
 def handle_ssh_connection(client_socket, client_address):
-    """SSH honeypot bağlantılarını işler."""
+    """SSH honeypot bağlantılarını işler ve Brute Force saldırılarına sahte veriler gönderir."""
     print(f"{timestamp()} - SSH bağlantısı tespit edildi. IP: {client_address[0]}")
-    delay_response(10)
-    response = "SSH-2.0-OpenSSH_8.1\n"
-    client_socket.sendall(response.encode())
+
+    attempts = 0
+    while attempts < MAX_ATTEMPTS:
+        # Sahte kullanıcı adı ve şifre oluştur
+        fake_cred = generate_fake_credentials()
+        response = f"Login attempt detected!\nUsername: {fake_cred['username']}\nPassword: {fake_cred['password']}\n"
+        
+        # Yanıtı geciktir ve saldırgana sahte veriyi gönder
+        delay_response(3)
+        client_socket.sendall(response.encode())
+        
+        print(f"{timestamp()} - Sahte veri gönderildi: Kullanıcı Adı: {fake_cred['username']}, Şifre: {fake_cred['password']}")
+        
+        attempts += 1
+
+    # Brute Force denemesi limitine ulaşıldığında bağlantıyı kapat
+    print(f"{timestamp()} - Brute Force denemesi sınırına ulaşıldı. IP: {client_address[0]}")
+    client_socket.sendall("Too many attempts. Connection closed.\n".encode())
     client_socket.close()
 
 def start_ssh_honeypot():
@@ -57,42 +63,10 @@ def start_ssh_honeypot():
         thread = threading.Thread(target=handle_ssh_connection, args=(client_socket, client_address))
         thread.start()
 
-def handle_ftp_connection(client_socket, client_address):
-    """FTP honeypot bağlantılarını işler."""
-    print(f"{timestamp()} - FTP bağlantısı tespit edildi. IP: {client_address[0]}")
-    delay_response(8)
-    response = "220 (vsFTPd 3.0.3)\n"
-    client_socket.sendall(response.encode())
-    client_socket.close()
-
-def start_ftp_honeypot():
-    """FTP honeypot başlatır."""
-    print(f"{timestamp()} - FTP honeypot başlatılıyor (Port: {FTP_PORT})...")
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(("0.0.0.0", FTP_PORT))
-    server.listen(5)
-
-    while True:
-        client_socket, client_address = server.accept()
-        thread = threading.Thread(target=handle_ftp_connection, args=(client_socket, client_address))
-        thread.start()
-
 def main():
-    """Ana işlev, tüm honeypot servislerini başlatır."""
+    """Ana işlev, SSH honeypot'u başlatır."""
     print(f"{timestamp()} - Honeypot sistemi başlatılıyor...")
-
-    # Paralel hizmet başlatma
-    http_thread = threading.Thread(target=start_http_honeypot)
-    ssh_thread = threading.Thread(target=start_ssh_honeypot)
-    ftp_thread = threading.Thread(target=start_ftp_honeypot)
-
-    http_thread.start()
-    ssh_thread.start()
-    ftp_thread.start()
-
-    http_thread.join()
-    ssh_thread.join()
-    ftp_thread.join()
+    start_ssh_honeypot()
 
 if __name__ == "__main__":
     try:
