@@ -3,18 +3,13 @@ import threading
 import time
 from datetime import datetime
 import random
+import string
 
 # === Ayarlar ===
 SSH_PORT = 8080
-MAX_ATTEMPTS = 5  # Brute Force saldırılarındaki maksimum giriş deneme sayısı
-FAKE_CREDENTIALS = [
-    {"username": "admin", "password": "123456"},
-    {"username": "root", "password": "password"},
-    {"username": "guest", "password": "guest123"},
-    {"username": "test", "password": "test123"},
-    {"username": "user", "password": "user123"}
-]
+MAX_ATTEMPTS = 100000  # Brute Force saldırılarındaki maksimum giriş deneme sayısı
 
+# === Fonksiyonlar ===
 def timestamp():
     """Zaman damgası oluşturur."""
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -24,9 +19,15 @@ def delay_response(seconds):
     print(f"{timestamp()} - Saldırganı oyalamak için {seconds} saniye bekleniyor...")
     time.sleep(seconds)
 
+def generate_random_string(length=8):
+    """Rastgele bir string oluşturur."""
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
 def generate_fake_credentials():
     """Rastgele sahte kullanıcı adı ve şifre oluşturur."""
-    return random.choice(FAKE_CREDENTIALS)
+    username = generate_random_string(random.randint(5, 10))
+    password = generate_random_string(random.randint(8, 12))
+    return {"username": username, "password": password}
 
 def handle_ssh_connection(client_socket, client_address):
     """SSH honeypot bağlantılarını işler ve Brute Force saldırılarına sahte veriler gönderir."""
