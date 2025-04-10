@@ -5,7 +5,7 @@ from datetime import datetime
 import random
 
 # === Ayarlar ===
-SSH_PORT = 2222
+SSH_PORT = 8080
 MAX_ATTEMPTS = 5  # Brute Force saldırılarındaki maksimum giriş deneme sayısı
 FAKE_CREDENTIALS = [
     {"username": "admin", "password": "123456"},
