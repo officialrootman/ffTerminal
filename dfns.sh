@@ -1,11 +1,10 @@
 #!/bin/sh
 
-# İSH Honeypot Sistemi
-# Amacı: Saldırgan aktivitelerini izlemek, loglamak ve minimal bağımlılıkla çalışmak
+# İSH Ultimate Honeypot Sistemi
+# Amacı: Saldırgan aktivitelerini minimal bir yapıda izlemek ve loglama gereksinimini ortadan kaldırmak
 # Yasal Uyarı: Bu script yalnızca etik kullanım ve eğitim amaçlıdır.
 
 # === Ayarlar ===
-LOG_FILE="honeypot_ish_logs.txt"
 HTTP_PORT=8080
 SSH_PORT=2222
 TMP_HTTP_REQUEST="/tmp/http_request.txt"
@@ -16,15 +15,9 @@ timestamp() {
   date +"%Y-%m-%d %H:%M:%S"
 }
 
-# Güvenli Loglama
-log_event() {
-  local MESSAGE=$1
-  echo "$(timestamp) - $MESSAGE" >> "$LOG_FILE"
-}
-
 # HTTP Honeypot
 start_http_honeypot() {
-  log_event "HTTP honeypot başlatılıyor (Port: $HTTP_PORT)..."
+  echo "$(timestamp) - HTTP honeypot başlatılıyor (Port: $HTTP_PORT)..."
 
   while true; do
     # Gelen HTTP bağlantılarını dinle
@@ -35,8 +28,8 @@ start_http_honeypot() {
     # Gelen isteği analiz et
     SENDER_IP=$(netstat -an | grep ":$HTTP_PORT" | grep ESTABLISHED | awk '{print $5}' | cut -d: -f1)
     if [ ! -z "$SENDER_IP" ]; then
-      log_event "HTTP bağlantısı tespit edildi. IP: $SENDER_IP"
-      log_event "Gelen HTTP isteği: $(cat $TMP_HTTP_REQUEST)"
+      echo "$(timestamp) - HTTP bağlantısı tespit edildi. IP: $SENDER_IP"
+      echo "$(timestamp) - Gelen HTTP isteği: $(cat $TMP_HTTP_REQUEST)"
     fi
 
     # Geçici dosyayı temizle
@@ -46,7 +39,7 @@ start_http_honeypot() {
 
 # SSH Honeypot
 start_ssh_honeypot() {
-  log_event "SSH honeypot başlatılıyor (Port: $SSH_PORT)..."
+  echo "$(timestamp) - SSH honeypot başlatılıyor (Port: $SSH_PORT)..."
 
   while true; do
     # Sahte SSH bağlantılarını dinle
@@ -57,7 +50,7 @@ start_ssh_honeypot() {
     # Gelen isteği analiz et
     SENDER_IP=$(netstat -an | grep ":$SSH_PORT" | grep ESTABLISHED | awk '{print $5}' | cut -d: -f1)
     if [ ! -z "$SENDER_IP" ]; then
-      log_event "SSH bağlantısı tespit edildi. IP: $SENDER_IP"
+      echo "$(timestamp) - SSH bağlantısı tespit edildi. IP: $SENDER_IP"
     fi
 
     # Geçici dosyayı temizle
@@ -67,8 +60,7 @@ start_ssh_honeypot() {
 
 # Ana İşlev
 main() {
-  # Log dosyası başlat
-  log_event "Honeypot sistemi başlatılıyor..."
+  echo "$(timestamp) - Honeypot sistemi başlatılıyor..."
 
   # Paralel Servis Başlatma
   start_http_honeypot &
@@ -78,7 +70,7 @@ main() {
 
 # Çıkış ve Temizlik
 cleanup() {
-  log_event "Honeypot sistemi durduruluyor..."
+  echo "$(timestamp) - Honeypot sistemi durduruluyor..."
   rm -f "$TMP_HTTP_REQUEST" "$TMP_SSH_REQUEST"
   exit 0
 }
