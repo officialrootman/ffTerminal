@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Ana Sayfa{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1>Son Paylaşımlar</h1>
+        {% for post in posts %}
+            <article class="card mb-4">
+                <div class="card-body">
+                    <h2 class="card-title">{{ post.title }}</h2>
+                    <p class="card-text">{{ post.content[:200] }}{% if post.content|length > 200 %}...{% endif %}</p>
+                    <div class="text-muted">
+                        {{ post.author.username }} tarafından {{ post.date_posted.strftime('%Y-%m-%d') }} tarihinde paylaşıldı
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Hakkında</h5>
+                <p class="card-text">Modern Blog'a hoş geldiniz! Bu platform, düşüncelerinizi paylaşabileceğiniz modern bir blog sitesidir.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
